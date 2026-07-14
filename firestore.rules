@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'message', 'type', 'read', 'createdAt'])
+        && data.keys().size() == 7
+        && isValidId(data.id)
+        && isValidId(data.userId)
+        && data.title is string && data.title.size() <= 128
+        && data.message is string && data.message.size() <= 512
+        && data.type in ['upvote', 'bid', 'mint', 'system']
+        && data.read is bool
+        && data.createdAt is timestamp;
+    }
+
+    // Notifications collection rules
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isOwner(resource.data.userId) && isValidId(notificationId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) 
+                    && isValidId(notificationId) 
+                    && isValidNotification(request.resource.data)
+                    && request.resource.data.createdAt == request.time;
+      allow update: if isSignedIn() && isOwner(resource.data.userId) 
+                    && isValidId(notificationId) 
+                    && isValidNotification(request.resource.data)
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId) && isValidId(notificationId);
+    }
+  }
+}

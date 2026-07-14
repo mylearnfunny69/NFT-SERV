@@ -1,0 +1,6 @@
+{
+  "name": "AI Chat NFT Publisher",
+  "description": "Transform ChatGPT or Base 44 AI chat ideas and logs into beautifully stylized NFTs on Bitcoin/Stacks L2, and publish them to a global public gallery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

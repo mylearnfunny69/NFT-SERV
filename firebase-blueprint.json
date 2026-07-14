@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "notification": {
+      "title": "Notification",
+      "description": "Real-time user upvote, bid, or minting notifications.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "type": {
+          "type": "string",
+          "enum": ["upvote", "bid", "mint", "system"]
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "title", "message", "type", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/notifications/{notificationId}": {
+      "schema": "notification",
+      "description": "User notifications for real-time upvotes, bids, and mints"
+    }
+  }
+}
