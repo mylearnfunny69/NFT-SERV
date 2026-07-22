@@ -43,7 +43,7 @@ export default function WANNodeHub() {
 
   // Stripe Config
   const [stripePublishableKey, setStripePublishableKey] = useState<string>(
-    "pk_live_51SdE9z3av8uGc5ofqzakv7P2P7r6uQrAI7h8hrHWRT2aiT4oZmdTrnlxAT02My3xLRvxNIJ5iVQxh8YAEl2dWEpC00aDQwXg0r"
+    (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || "pk_live_51SdE9z3av8uGc5ofqzakv7P2P7r6uQrAI7h8hrHWRT2aiT4oZmdTrnlxAT02My3xLRvxNIJ5iVQxh8YAEl2dWEpC00aDQwXg0r"
   );
   const [stripeEnvMode, setStripeEnvMode] = useState<"live" | "test">("live");
   const [isStripeValidated, setIsStripeValidated] = useState<boolean>(true);

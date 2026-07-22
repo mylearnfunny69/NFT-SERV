@@ -1,6 +1,6 @@
 {
   "name": "AI Chat NFT Publisher",
-  "description": "Transform ChatGPT or Base 44 AI chat ideas and logs into beautifully stylized NFTs on Bitcoin/Stacks L2, and publish them to a global public gallery.",
+  "description": "Orchestrate your futuristic PC builds, custom modern graffiti apparel, and sovereign digital assets. Automatically generate copywriting and publish to Amazon, Facebook, and Instagram via the integrated AWS Manus Agentic Pipeline.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

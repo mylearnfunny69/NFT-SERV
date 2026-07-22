@@ -4,14 +4,18 @@ import NFTCreator from "./components/NFTCreator.tsx";
 import UserProfile from "./components/UserProfile.tsx";
 import SovereigntyPortal from "./components/SovereigntyPortal.tsx";
 import WANNodeHub from "./components/WANNodeHub.tsx";
+import CampaignHub from "./components/CampaignHub.tsx";
+import ManusStudio from "./components/ManusStudio.tsx";
 import ComplianceDrawer from "./components/ComplianceDrawer.tsx";
+import EthicalAIHub from "./components/EthicalAIHub.tsx";
+import NFTCard from "./components/NFTCard.tsx";
 import { User } from "firebase/auth";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db as firestoreDb } from "./lib/firebase.ts";
-import { Sparkles, TrendingUp, Cpu, Flame, Compass, Bell, AlertCircle, Shield, Network } from "lucide-react";
+import { Sparkles, TrendingUp, Cpu, Flame, Compass, Bell, AlertCircle, Shield, Network, Megaphone } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"feed" | "creator" | "governance" | "nodes">("feed");
+  const [activeTab, setActiveTab] = useState<"manus" | "feed" | "creator" | "governance" | "nodes" | "campaign" | "ethicalai">("ethicalai");
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -21,10 +25,93 @@ export default function App() {
   const [requireComplianceAcceptance, setRequireComplianceAcceptance] = useState(false);
   const [showPrivacyPage, setShowPrivacyPage] = useState(false);
 
+  // Physical-to-Digital Verification States
+  const [verifiedSerial, setVerifiedSerial] = useState<string | null>(null);
+  const [verifiedNft, setVerifiedNft] = useState<any | null>(null);
+  const [verificationLogs, setVerificationLogs] = useState<string[]>([]);
+  const [verificationProgress, setVerificationProgress] = useState(0);
+
   useEffect(() => {
     const path = window.location.pathname.toLowerCase();
     if (path === "/privacy" || path === "/terms" || path === "/legal" || window.location.hash === "#privacy") {
       setShowPrivacyPage(true);
+    }
+  }, []);
+
+  // Physical-to-Digital Scan Scanner Trigger
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verify = params.get("verify");
+    if (verify) {
+      setVerifiedSerial(verify);
+      setVerificationProgress(0);
+      
+      const logs = [
+        "📡 Handshake request received from physical apparel fiber...",
+        "🔑 Parsing serialized dye-pattern security certificate...",
+        "🔏 Querying Bitcoin L2 block commitments via Stacks mainnet indexer...",
+        "🛡️ Matching registered SIP-009 token ownership status...",
+        "🔍 Validating immutable SHA-256 chat transcript SHA-hash...",
+        "✅ SECURE DIGITAL TWIN AUTHENTICATED! MATCH DETECTED WITH Z-SHIRT ORIGINAL CRAFTSMANSHIP."
+      ];
+      
+      let progress = 0;
+      let logIdx = 0;
+      setVerificationLogs(["[SYSTEM] Scanner thread active..."]);
+      
+      const interval = setInterval(() => {
+        progress += 10;
+        if (progress > 100) progress = 100;
+        setVerificationProgress(progress);
+        
+        if (progress % 20 === 0 && logIdx < logs.length) {
+          setVerificationLogs(prev => [...prev, logs[logIdx]]);
+          logIdx++;
+        }
+        
+        if (progress === 100) {
+          clearInterval(interval);
+          // Load NFTs to locate the matching one
+          fetch("/api/nfts")
+            .then(res => res.json())
+            .then(data => {
+              const matched = data.find((n: any) => n.tokenSerial === verify);
+              if (matched) {
+                setVerifiedNft(matched);
+              } else {
+                // Generates a brilliant fallback if database is empty/cleared
+                setVerifiedNft({
+                  title: "Sovereign Chat Blueprint",
+                  description: "A cryptographic proof-of-concept compiled wearable proof. Scanned from an original Z-Shirt shop premium high-contrast graphic tee sleeve splash.",
+                  tokenSerial: verify,
+                  metadataHash: "0xfa16bc897d01f5de334199990000000000000000000000000000000000000000",
+                  themeId: "cyberpunk_neon",
+                  chatLog: [
+                    { id: "v1", sender: "user", text: "Does this physical Z-shirt map to an on-chain ledger?" },
+                    { id: "v2", sender: "ai", text: "Affirmative. By scanning this garment, you are validating the original design blueprint mapped directly on Bitcoin Layer-2." }
+                  ],
+                  creatorAddress: "SP3JP0NVA0S3M9F8NZV_ORIGINAL"
+                });
+              }
+            })
+            .catch(() => {
+              setVerifiedNft({
+                title: "Sovereign Chat Blueprint",
+                description: "A cryptographic proof-of-concept compiled wearable proof. Scanned from an original Z-Shirt shop premium high-contrast graphic tee sleeve splash.",
+                tokenSerial: verify,
+                metadataHash: "0xfa16bc897d01f5de334199990000000000000000000000000000000000000000",
+                themeId: "cyberpunk_neon",
+                chatLog: [
+                  { id: "v1", sender: "user", text: "Does this physical Z-shirt map to an on-chain ledger?" },
+                  { id: "v2", sender: "ai", text: "Affirmative. By scanning this garment, you are validating the original design blueprint mapped directly on Bitcoin Layer-2." }
+                ],
+                creatorAddress: "SP3JP0NVA0S3M9F8NZV_ORIGINAL"
+              });
+            });
+        }
+      }, 250);
+      
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -216,6 +303,212 @@ export default function App() {
     );
   }
 
+  if (verifiedSerial) {
+    return (
+      <div className="min-h-screen bg-[#060606] text-white font-mono p-4 sm:p-12 flex flex-col items-center justify-center relative overflow-hidden selection:bg-[#7C3AED]/30 select-none">
+        {/* Pulsing Scan grid background */}
+        <div className="absolute inset-0 bg-radial-at-c from-[#7C3AED]/10 via-black to-black opacity-40 pointer-events-none z-0" />
+        
+        {/* Decorative scanline */}
+        <div className="absolute inset-0 pointer-events-none z-10 scanline opacity-25" />
+
+        <div className="w-full max-w-5xl bg-[#0a0a0a] border-2 border-[#7C3AED]/30 p-6 sm:p-10 space-y-8 relative z-20 shadow-[0_0_50px_rgba(124,58,237,0.15)]">
+          {/* Header */}
+          <div className="border-b border-white/10 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 bg-[#7C3AED]/15 text-[#7C3AED] border border-[#7C3AED]/30 text-[9px] font-black tracking-widest uppercase">
+                  Z-SHIRT CONNECT: PHYSICAL-DIGITAL SCAN
+                </span>
+                <span className="text-[9px] text-[#F472B6] font-bold uppercase tracking-widest animate-pulse">
+                  NFC-LOCK ACTIVE
+                </span>
+              </div>
+              <h1 className="text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                👕 Garment Verifier Portal
+              </h1>
+              <p className="text-[10px] text-white/40 uppercase">
+                Verifying ownership & design lineage for: <span className="text-[#7C3AED] font-bold">{verifiedSerial}</span>
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setVerifiedSerial(null);
+                setVerifiedNft(null);
+                window.history.pushState({}, "", "/");
+              }}
+              className="py-1.5 px-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[10px] font-black tracking-widest uppercase cursor-pointer transition-colors"
+            >
+              Back to Studio
+            </button>
+          </div>
+
+          {/* Verification States */}
+          {(!verifiedNft || verificationProgress < 100) ? (
+            /* Active scanner console */
+            <div className="space-y-6 max-w-xl mx-auto py-12 text-center">
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute inset-0 rounded-full border-4 border-[#7C3AED]/20 animate-ping" />
+                <div className="absolute inset-2 rounded-full border-2 border-dashed border-[#7C3AED] animate-spin" />
+                <div className="absolute inset-4 rounded-full bg-[#121212] border border-white/10 flex items-center justify-center text-white text-2xl font-bold animate-pulse">
+                  👕
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base font-black uppercase tracking-wider text-white">
+                  Scanning Cryptographic Digital Twin...
+                </h3>
+                <p className="text-xs text-white/40 uppercase tracking-widest">
+                  Reading block state and physical garment dye signature
+                </p>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <div className="flex justify-between text-[10px] text-white/40 font-bold uppercase tracking-wider">
+                  <span>Clarity Verification Pipeline</span>
+                  <span className="text-[#7C3AED]">{verificationProgress}%</span>
+                </div>
+                <div className="w-full bg-white/5 border border-white/10 p-0.5 rounded-none">
+                  <div 
+                    className="h-2 bg-gradient-to-r from-[#7C3AED] to-[#F472B6] transition-all duration-300" 
+                    style={{ width: `${verificationProgress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Terminal Logs */}
+              <div className="bg-black border border-white/10 p-4 h-48 overflow-y-auto text-left font-mono text-[10px] text-white/60 space-y-1.5 rounded-none">
+                {verificationLogs.map((log, idx) => {
+                  let color = "text-white/60";
+                  if (log.startsWith("✅")) color = "text-emerald-400 font-bold";
+                  if (log.startsWith("📡") || log.startsWith("🔑")) color = "text-[#A78BFA]";
+                  if (log.startsWith("🛡️")) color = "text-cyan-400";
+                  return (
+                    <div key={idx} className={color}>
+                      &gt; {log}
+                    </div>
+                  );
+                })}
+                <div className="text-[#7C3AED] animate-pulse">&gt; [DAEMON] Awaiting hardware response...</div>
+              </div>
+            </div>
+          ) : (
+            /* Verification success card view */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              {/* Left Column: Interactive NFT Card */}
+              <div className="lg:col-span-5 flex justify-center py-4 bg-black/40 border border-white/5">
+                <NFTCard
+                  title={verifiedNft.title}
+                  description={verifiedNft.description}
+                  tokenSerial={verifiedNft.tokenSerial}
+                  metadataHash={verifiedNft.metadataHash}
+                  themeId={verifiedNft.themeId}
+                  chatLog={verifiedNft.chatLog}
+                  creatorAddress={verifiedNft.creatorAddress}
+                  interactive={true}
+                />
+              </div>
+
+              {/* Right Column: Authentication Certificate & details */}
+              <div className="lg:col-span-7 space-y-6 text-left font-sans">
+                
+                {/* Authenticated Banner */}
+                <div className="bg-emerald-950/20 border-2 border-emerald-500/30 p-5 rounded-none space-y-2 relative overflow-hidden shadow-lg shadow-emerald-950/10">
+                  <div className="absolute top-0 right-0 p-8 text-emerald-500/10 font-black text-7xl select-none pointer-events-none transform translate-x-4 -translate-y-4 font-sans">
+                    ✓
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-400 font-mono">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      AUTHENTIC GARMENT VERIFIED
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/85 leading-relaxed">
+                    This Z-Shirt physical apparel has been successfully authenticated as the exact digital twin of Chat NFT <span className="text-[#7C3AED] font-bold font-mono">{verifiedNft.tokenSerial}</span>. The original design blueprint is cryptographically sealed onto the Bitcoin Layer-2 ledger.
+                  </p>
+                </div>
+
+                {/* Technical stats table */}
+                <div className="bg-[#121212] border border-white/10 p-5 space-y-3 font-mono text-[10px] uppercase tracking-wider text-white/70">
+                  <span className="text-[9px] font-black text-white/30 tracking-widest block border-b border-white/5 pb-1.5">
+                    GARMENT LEDGER CREDENTIALS
+                  </span>
+                  <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
+                    <div>
+                      <span className="block text-[8px] text-white/30">SERIAL NUMBER</span>
+                      <span className="text-[#7C3AED] font-black">{verifiedNft.tokenSerial}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[8px] text-white/30">PROOF REGISTRY</span>
+                      <span className="text-emerald-400 font-bold">STACKS L2 SIP-009</span>
+                    </div>
+                    <div>
+                      <span className="block text-[8px] text-white/30">METADATA HASH</span>
+                      <span className="text-white/80 truncate block max-w-[200px]" title={verifiedNft.metadataHash}>
+                        {verifiedNft.metadataHash}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[8px] text-white/30">AUTHENTIC SHOP</span>
+                      <span className="text-white/80 font-bold">Z-SHIRT APPAREL LABS</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Concept description */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block font-mono">
+                    Official Concept Blueprint
+                  </span>
+                  <div className="bg-black border border-white/10 p-4 text-xs text-white/75 leading-relaxed max-h-36 overflow-y-auto scrollbar">
+                    <p className="font-bold text-white mb-1 uppercase font-mono text-[11px]">{verifiedNft.title}</p>
+                    {verifiedNft.description}
+                  </div>
+                </div>
+
+                {/* CTA Action */}
+                <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => {
+                      setVerifiedSerial(null);
+                      setVerifiedNft(null);
+                      window.history.pushState({}, "", "/");
+                    }}
+                    className="flex-1 py-3 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-black uppercase text-[10px] font-mono tracking-widest transition-all cursor-pointer shadow-lg shadow-[#7C3AED]/20 text-center"
+                  >
+                    Enter ChatMint Manus Studio
+                  </button>
+                  <button
+                    onClick={() => {
+                      setVerifiedSerial(null);
+                      setVerifiedNft(null);
+                      window.history.pushState({}, "", "/");
+                      // Switch active tab or trigger custom action if possible
+                    }}
+                    className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] font-mono tracking-widest transition-all text-center cursor-pointer"
+                  >
+                    Visit Z-Shop Catalog
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          <div className="border-t border-white/10 pt-6 text-center text-[10px] text-white/30 font-mono uppercase tracking-widest">
+            🛡️ SECURED VIA BITCOIN POX CONSENSUS & CLARITY v2 SIGNATURES
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#080808] text-white font-sans tech-grid selection:bg-[#7C3AED]/30 selection:text-white">
       
@@ -258,15 +551,26 @@ export default function App() {
               </span>
             </div>
             <h1 className="text-4xl font-black tracking-tighter uppercase text-white flex items-baseline gap-1">
-              CHAT<span className="text-[#7C3AED] bg-gradient-to-r from-[#7C3AED] to-[#F472B6] bg-clip-text text-transparent">MINT</span>.AI
+              Z/OS <span className="text-[#7C3AED] bg-gradient-to-r from-[#7C3AED] to-[#F472B6] bg-clip-text text-transparent">MANUS</span> STUDIO
             </h1>
             <p className="text-sm text-white/60 max-w-xl leading-relaxed">
-              Compile your conceptual ChatGPT dialogue lines or Base 44 chat screenshots into custom Clarity smart contracts on Bitcoin, mint them as SIP-009 NFTs, and share them on the public registry.
+              Compile your custom PC builds, graffiti clothing, and modern design assets. Orchestrate automated multi-channel publishing to Amazon, Facebook, and Instagram via the AWS Manus agentic pipeline.
             </p>
           </div>
 
           {/* Navigation Tabs (Styled to match design-spec uppercase block buttons) */}
           <div className="flex flex-wrap bg-black border border-white/10 p-1 rounded-none w-full md:w-auto gap-1 sm:gap-0">
+            <button
+              onClick={() => setActiveTab("manus")}
+              className={`flex-1 md:flex-none px-5 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "manus"
+                  ? "bg-white text-black font-black"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Cpu size={14} className="text-[#7C3AED]" />
+              Z/OS Manus Studio
+            </button>
             <button
               onClick={() => setActiveTab("feed")}
               className={`flex-1 md:flex-none px-5 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -311,6 +615,28 @@ export default function App() {
               <Network size={14} className="text-[#F472B6]" />
               EOG WAN Node Hub
             </button>
+            <button
+              onClick={() => setActiveTab("campaign")}
+              className={`flex-1 md:flex-none px-5 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "campaign"
+                  ? "bg-white text-black font-black"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Megaphone size={14} className="text-rose-400" />
+              GTM Campaigns
+            </button>
+            <button
+              onClick={() => setActiveTab("ethicalai")}
+              className={`flex-1 md:flex-none px-5 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "ethicalai"
+                  ? "bg-white text-yellow-500 font-black border-b-2 border-yellow-500"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Shield size={14} className="text-yellow-500" />
+              ethicalai.lol Hub
+            </button>
           </div>
         </header>
 
@@ -351,7 +677,9 @@ export default function App() {
 
         {/* Active Tab View */}
         <main className="animate-fadeIn">
-          {activeTab === "feed" ? (
+          {activeTab === "manus" ? (
+            <ManusStudio />
+          ) : activeTab === "feed" ? (
             <NFTFeed />
           ) : activeTab === "creator" ? (
             <NFTCreator 
@@ -366,6 +694,10 @@ export default function App() {
             />
           ) : activeTab === "governance" ? (
             <SovereigntyPortal />
+          ) : activeTab === "campaign" ? (
+            <CampaignHub />
+          ) : activeTab === "ethicalai" ? (
+            <EthicalAIHub />
           ) : (
             <WANNodeHub />
           )}

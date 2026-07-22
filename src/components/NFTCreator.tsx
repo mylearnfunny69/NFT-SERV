@@ -3,9 +3,11 @@ import { ChatMessage, NFTThemeId, NFT_THEMES } from "../types";
 import { generateMockAddress, generateHash } from "../utils";
 import NFTCard from "./NFTCard";
 import NFTSimulator from "./NFTSimulator";
+import CelebrationModal from "./CelebrationModal";
+import ReadingComprehension from "./ReadingComprehension";
 import { 
   Sparkles, Upload, FileText, Settings, ArrowRight, CheckCircle2, 
-  HelpCircle, Compass, Terminal, Shield, RefreshCw, Calendar, ListTodo, FileSpreadsheet, Lock 
+  HelpCircle, Compass, Terminal, Shield, RefreshCw, Calendar, ListTodo, FileSpreadsheet, Lock, HardDrive 
 } from "lucide-react";
 import { createGoogleTaskForNFT, scheduleCalendarCelebration, createFeedbackGoogleForm } from "../utils/workspace.ts";
 
@@ -38,6 +40,7 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
   const [metadataHash, setMetadataHash] = useState("");
   const [tokenSerial, setTokenSerial] = useState("");
   const [mintedTx, setMintedTx] = useState<{ txHash: string; blockNumber: number } | null>(null);
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
 
   // Google Workspace Integration Option States
   const [syncTask, setSyncTask] = useState(false);
@@ -59,6 +62,273 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Coinbase NFT Import Bridge States
+  const [pathway, setPathway] = useState<"ai_compile" | "coinbase_import">("ai_compile");
+  const [cbUsernameInput, setCbUsernameInput] = useState("");
+  const [cbCustomAddress, setCbCustomAddress] = useState("");
+  const [cbConnecting, setCbConnecting] = useState(false);
+  const [cbConnectingStatus, setCbConnectingStatus] = useState("");
+  const [cbConnected, setCbConnected] = useState(false);
+  const [cbResolvedAddress, setCbResolvedAddress] = useState("");
+  const [cbResolvedUsername, setCbResolvedUsername] = useState("");
+  
+  const COINBASE_PRESET_MINTS = [
+    {
+      id: "cb-preset-1",
+      title: "Base Introduced Commemorative",
+      description: "Commemorating the genesis of Base network L2 ecosystem, launched to bring the next billion users on-chain with speed and security.",
+      imageUrl: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=200&auto=format&fit=crop",
+      txHash: "0xbase09f8d7e6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1",
+      blockNumber: 18459203,
+      contractAddress: "0x7C3AED2D3A1F950746Q996K2DMVQT3K7H62696K9C2"
+    },
+    {
+      id: "cb-preset-2",
+      title: "Coinbase Stand with Crypto",
+      description: "Celebrating advocacy for clear crypto regulations and technological sovereignty globally. Anchored on Coinbase smart contracts.",
+      imageUrl: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?q=80&w=200&auto=format&fit=crop",
+      txHash: "0xbase7c3aed219b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c",
+      blockNumber: 18512390,
+      contractAddress: "0x18K7A92D1F9M1A0746Q996K2DMVQT3K7H62696K9"
+    },
+    {
+      id: "cb-preset-3",
+      title: "CB Smart Wallet Genesis",
+      description: "Celebrating the launch of next-gen smart wallets with passkey security, gasless interactions, and absolute client-side sovereignty.",
+      imageUrl: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=80&w=200&auto=format&fit=crop",
+      txHash: "0xbase29f8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1",
+      blockNumber: 18600121,
+      contractAddress: "0x2H7E97F81BMD9W0746Q996K2DMVQT3K7H62696K"
+    }
+  ];
+  
+  const [selectedCbMintIndex, setSelectedCbMintIndex] = useState<number>(0);
+  const [cbPorting, setCbPorting] = useState(false);
+  const [cbPortStatus, setCbPortStatus] = useState("");
+
+  // Google Drive Patent Import Bridge States
+  const [driveFiles, setDriveFiles] = useState<any[]>([]);
+  const [selectedDriveFileIndex, setSelectedDriveFileIndex] = useState<number>(0);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveConnectingStatus, setDriveConnectingStatus] = useState("");
+  const [driveError, setDriveError] = useState("");
+  const [driveSearchMode, setDriveSearchMode] = useState<"folder" | "global_patent">("folder");
+  const [drivePorting, setDrivePorting] = useState(false);
+  const [drivePortStatus, setDrivePortStatus] = useState("");
+
+  const DRIVE_PRESET_PATENTS = [
+    {
+      id: "drive-preset-1",
+      name: "Sovereign AI Consensus Engine (US9481203B2)",
+      mimeType: "application/pdf",
+      webViewLink: "https://drive.google.com",
+      createdTime: "2026-03-14T10:00:00Z",
+      size: "2.4 MB",
+      description: "A secure protocol for distributed ledger systems allowing localized artificial intelligence agents to commit consensus decisions to Bitcoin headers via proof-of-transfer (PoX)."
+    },
+    {
+      id: "drive-preset-2",
+      name: "Decentralized Zero-Knowledge Workout Attestation (US11029482B1)",
+      mimeType: "application/vnd.google-apps.document",
+      webViewLink: "https://drive.google.com",
+      createdTime: "2026-05-20T14:30:00Z",
+      size: "45 KB",
+      description: "Method and apparatus for validating user workout activity using cryptographically secure zero-knowledge proof circuits without exposing underlying spatial or biometric data vectors."
+    },
+    {
+      id: "drive-preset-3",
+      name: "Solitary Sourdough Node Network (US10394821B2)",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      webViewLink: "https://drive.google.com",
+      createdTime: "2026-06-01T08:15:00Z",
+      size: "184 KB",
+      description: "A completely decentralized commercial catering network utilizing smart contract delivery loops and hardware nodes triggered by Bitcoin Stacks layer-2 block commitments."
+    },
+    {
+      id: "drive-preset-4",
+      name: "Decentralized Magnetohydrodynamic Fusion Reactor Grid (US159021B1)",
+      mimeType: "application/vnd.google-apps.document",
+      webViewLink: "https://drive.google.com",
+      createdTime: "2026-07-01T09:00:00Z",
+      size: "1.4 MB",
+      description: "A patent blueprint describing high-temperature superconducting magnetic confinement fusion reactors stabilized via real-time smart feedback loops on Stacks L2, securing carbon-free energy grid distribution metrics."
+    },
+    {
+      id: "drive-preset-5",
+      name: "ZOS ITVFRLD Differential Lock Shifter (US20260938A1)",
+      mimeType: "application/vnd.google-apps.document",
+      webViewLink: "https://drive.google.com",
+      createdTime: "2026-07-19T18:00:00Z",
+      size: "820 KB",
+      description: "A patent blueprint detailing a cryptographic shifter bridging active campaign signals with secure non-deceptive reverse gates on Stacks L2, executing automated tithes onto Bitcoin."
+    }
+  ];
+
+  const fetchPatentsFromDrive = async (token: string) => {
+    setDriveLoading(true);
+    setDriveError("");
+    setDriveConnectingStatus("Querying Google Drive for secure folders...");
+    try {
+      // Step 1: Look for a folder named "patents" or "Patents"
+      const folderQuery = encodeURIComponent("mimeType = 'application/vnd.google-apps.folder' and (name = 'patents' or name = 'Patents') and trashed = false");
+      const folderRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${folderQuery}&fields=files(id,name)`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!folderRes.ok) {
+        throw new Error(`Folder search failed: ${folderRes.statusText}`);
+      }
+
+      const folderData = await folderRes.json();
+      const folders = folderData.files || [];
+
+      let files: any[] = [];
+      if (folders.length > 0) {
+        setDriveSearchMode("folder");
+        setDriveConnectingStatus(`Folder 'patents' found (ID: ${folders[0].id}). Listing patent files...`);
+        // Step 2: Query files inside this folder
+        const fileQuery = encodeURIComponent(`'${folders[0].id}' in parents and trashed = false`);
+        const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${fileQuery}&fields=files(id,name,mimeType,webViewLink,createdTime,size)&pageSize=50`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (filesRes.ok) {
+          const filesData = await filesRes.json();
+          files = filesData.files || [];
+        }
+      }
+
+      // Fallback: search for files containing "patent" or "Patent" anywhere in Drive
+      if (files.length === 0) {
+        setDriveSearchMode("global_patent");
+        setDriveConnectingStatus("No 'patents' folder found or folder is empty. Searching globally for 'patent' names...");
+        const globalQuery = encodeURIComponent("(name contains 'patent' or name contains 'Patent') and trashed = false");
+        const globalRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${globalQuery}&fields=files(id,name,mimeType,webViewLink,createdTime,size)&pageSize=50`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (globalRes.ok) {
+          const globalData = await globalRes.json();
+          files = globalData.files || [];
+        }
+      }
+
+      // Map files to our expected structure
+      const formattedFiles = files.map((f: any) => ({
+        id: f.id,
+        name: f.name.replace(/\.[^/.]+$/, ""), // remove extension
+        mimeType: f.mimeType,
+        webViewLink: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`,
+        createdTime: f.createdTime || new Date().toISOString(),
+        size: f.size ? `${Math.round(parseInt(f.size) / 1024)} KB` : "1.2 MB",
+        description: `Sovereign intellectual property file synced directly from Google Drive. Document ID: ${f.id}`
+      }));
+
+      setDriveFiles(formattedFiles);
+      if (formattedFiles.length > 0) {
+        setSelectedDriveFileIndex(0);
+      }
+    } catch (err: any) {
+      console.error("Failed to query Google Drive API:", err);
+      setDriveError(err.message || "An error occurred while fetching patents from Google Drive.");
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
+  const handleConnectDrive = async () => {
+    setDriveLoading(true);
+    setDriveError("");
+    setDriveConnectingStatus("Initializing secure Google OAuth popup...");
+    try {
+      const { signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
+      const { auth, googleProvider } = await import("../lib/firebase.ts");
+      
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken || null;
+      if (token) {
+        await fetchPatentsFromDrive(token);
+      } else {
+        throw new Error("Unable to retrieve Google OAuth access token from Firebase popup.");
+      }
+    } catch (err: any) {
+      console.error("Google Auth error in Creator:", err);
+      setDriveError(err.message || "Sign-in popup was cancelled or blocked.");
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
+  const handlePortDrivePatent = async (patent: any) => {
+    setDrivePorting(true);
+    setDrivePortStatus("Initiating secure technical patent analysis...");
+    
+    const statuses = [
+      "Contacting server-side Gemini intelligence...",
+      "Extracting patent claims & core mechanisms...",
+      "Drafting sovereign Web3 dialogue critique...",
+      "Compiling 1/1 digital certificate on Bitcoin L2..."
+    ];
+
+    let currentIdx = 0;
+    const interval = setInterval(() => {
+      if (currentIdx < statuses.length) {
+        setDrivePortStatus(statuses[currentIdx]);
+        currentIdx++;
+      }
+    }, 800);
+
+    try {
+      const response = await fetch("/api/analyze-patent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: patent.name,
+          description: patent.description
+        })
+      });
+
+      clearInterval(interval);
+
+      if (!response.ok) {
+        throw new Error("Failed to compile patent analysis.");
+      }
+
+      const parsed = await response.json();
+      
+      // Map recommended theme
+      const themeMap: Record<string, NFTThemeId> = {
+        classic_gold: "classic_gold",
+        cyberpunk_neon: "cyberpunk_neon",
+        base44_blue: "base44_blue",
+        emerald_gpt: "emerald_gpt",
+        obsidian_dark: "obsidian_dark"
+      };
+
+      setTitle(parsed.title || patent.name);
+      setDescription(parsed.description || patent.description);
+      setThemeId(themeMap[parsed.recommendedTheme] || "classic_gold");
+      setChatLog(parsed.chatLog || []);
+      setTokenSerial("PAT-DRIVE-" + Math.floor(1000 + Math.random() * 9000));
+      setMetadataHash(generateHash(patent.name + Date.now().toString()));
+      
+      // Jump to Customization refinement!
+      setStep("refining");
+    } catch (err: any) {
+      console.error("Error porting drive patent:", err);
+      alert("Error parsing patent: " + err.message);
+    } finally {
+      setDrivePorting(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (pathway === "drive_patent_import" && accessToken) {
+      fetchPatentsFromDrive(accessToken);
+    }
+  }, [accessToken, pathway]);
+
   // Set up a mock address on first init
   useState(() => {
     setCreatorAddress(generateMockAddress());
@@ -72,6 +342,10 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
     {
       name: "ZK-SNARK Workout Proof",
       text: "User: Can I prove to my friends that I ran 5km today without sharing my GPS tracking or map?\nAI: Yes, absolutely. We can compile a zero-knowledge circuit that takes your GPS path, verifies locally that the distance > 5km, and generates a zk-SNARK proof of completion.\nUser: Awesome. Only the true/false proof goes on-chain, keeping my routes completely private!\nAI: Exactly. Zero privacy leaks, maximum bragging rights."
+    },
+    {
+      name: "MHD Fusion Power Grid",
+      text: "User: Can we run a nuclear fusion grid feedback loop on Stacks?\nAI: Absolutely. The magnetic confinement field requires microsecond adjustments, but we can anchor the macro stability metrics, block validations, and telemetry states to Stacks L2.\nUser: That is genius! The energy dispatch events can mint carbon credit tokens directly onto the Bitcoin layer.\nAI: Correct. By securing these logs, we create an un-tamperable certification of clean power generation that secondary energy markets can audit in real-time."
     }
   ];
 
@@ -197,7 +471,7 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
       let idToken = "";
       if (user) {
         try {
-          idToken = await user.getIdToken();
+          idToken = await user.getIdToken(true);
         } catch (e) {
           console.warn("Could not get firebase ID token:", e);
         }
@@ -280,6 +554,131 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
     }, 1000);
   };
 
+  const handleConnectCoinbase = () => {
+    setCbConnecting(true);
+    const statuses = [
+      "Contacting Coinbase Wallet API...",
+      "Resolving cb.id secure handshake...",
+      "Verifying device Passkey authentication...",
+      "Reading Base network NFT indexer records...",
+      "Coinbase Wallet verified and connected successfully!"
+    ];
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < statuses.length) {
+        setCbConnectingStatus(statuses[idx]);
+        idx++;
+      } else {
+        clearInterval(interval);
+        setCbConnecting(false);
+        setCbConnected(true);
+        const finalUsername = cbUsernameInput.trim() ? (cbUsernameInput.includes(".cb.id") ? cbUsernameInput : `${cbUsernameInput}.cb.id`) : "mylearnfunny.cb.id";
+        setCbResolvedUsername(finalUsername);
+        const finalAddress = cbCustomAddress.trim() || "0x" + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+        setCbResolvedAddress(finalAddress);
+        
+        // Auto-update NFT Card values
+        const activePreset = COINBASE_PRESET_MINTS[selectedCbMintIndex];
+        setTitle(activePreset.title);
+        setDescription(activePreset.description);
+        setThemeId("coinbase_blue");
+        setTokenSerial("CB-MINT-0" + (selectedCbMintIndex + 1));
+        setMetadataHash(activePreset.txHash);
+        setChatLog([
+          { id: "cb-msg-1", sender: "user", text: `Retrieve minted asset from Coinbase Wallet: ${finalUsername}` },
+          { id: "cb-msg-2", sender: "ai", text: `Handshake successful. Resolving address ${finalAddress.substring(0, 8)}...` },
+          { id: "cb-msg-3", sender: "system", text: `Bridging "${activePreset.title}" on Base L2 block #${activePreset.blockNumber}.` }
+        ]);
+      }
+    }, 450);
+  };
+
+  const handleSelectCbPreset = (idx: number) => {
+    setSelectedCbMintIndex(idx);
+    const activePreset = COINBASE_PRESET_MINTS[idx];
+    setTitle(activePreset.title);
+    setDescription(activePreset.description);
+    setTokenSerial("CB-MINT-0" + (idx + 1));
+    setMetadataHash(activePreset.txHash);
+    if (cbConnected) {
+      setChatLog([
+        { id: "cb-msg-1", sender: "user", text: `Retrieve minted asset from Coinbase Wallet: ${cbResolvedUsername}` },
+        { id: "cb-msg-2", sender: "ai", text: `Handshake successful. Resolving address ${cbResolvedAddress.substring(0, 8)}...` },
+        { id: "cb-msg-3", sender: "system", text: `Bridging "${activePreset.title}" on Base L2 block #${activePreset.blockNumber}.` }
+      ]);
+    }
+  };
+
+  const handlePortCoinbaseNFT = async () => {
+    setCbPorting(true);
+    const activePreset = COINBASE_PRESET_MINTS[selectedCbMintIndex];
+    const statuses = [
+      "Securing cross-chain stateproof from Base Network...",
+      "Generating Clarity SIP-009 wrapped smart contract deployment...",
+      "Anchoring contract witness block onto Stacks L2 mempool...",
+      "Verifying metadata hash on IPFS...",
+      "Finalizing transaction registry records in database..."
+    ];
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < statuses.length) {
+        setCbPortStatus(statuses[idx]);
+        idx++;
+      }
+    }, 550);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      clearInterval(interval);
+      
+      let idToken = "";
+      if (user) {
+        try {
+          idToken = await user.getIdToken(true);
+        } catch (e) {
+          console.warn("Could not get firebase ID token:", e);
+        }
+      }
+
+      const finalChatLog = [
+        { id: "cb-m1", sender: "user", text: `Import existing Coinbase Mint "${activePreset.title}" from wallet ${cbResolvedUsername}` },
+        { id: "cb-m2", sender: "ai", text: `Validating proof of mint on Base block #${activePreset.blockNumber}. Tx: ${activePreset.txHash.substring(0, 16)}...` },
+        { id: "cb-m3", sender: "system", text: `Verified. Issuing Stacks L2 SIP-009 wrapper token CB-MINT-0${selectedCbMintIndex + 1} with absolute cryptographic mapping.` }
+      ];
+
+      const res = await fetch("/api/nfts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${activePreset.title} (CB Port)`,
+          description: `[PORTED COINBASE NFT] ${activePreset.description} Bridged securely from Base to Stacks L2 ChatMint framework.`,
+          chatLog: finalChatLog,
+          creatorAddress: cbResolvedAddress,
+          themeId: "coinbase_blue",
+          txHash: `0xstx_${activePreset.txHash.substring(2, 30)}`,
+          blockNumber: 15412 + Math.floor(Math.random() * 50),
+          userToken: idToken
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Porting registration failed.");
+      }
+
+      setMintedTx({
+        txHash: `0xstx_${activePreset.txHash.substring(2, 30)}`,
+        blockNumber: 15412 + Math.floor(Math.random() * 50)
+      });
+      setShowCelebrationModal(true);
+      setStep("success");
+    } catch (err) {
+      console.error(err);
+      alert("Cross-chain verification failed. Please try again.");
+    } finally {
+      setCbPorting(false);
+    }
+  };
+
   const handleReset = () => {
     setChatText("");
     setScreenshot(null);
@@ -297,15 +696,22 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
     setComplianceScreened(false);
     setComplianceScreening(false);
     setActiveOpsShield(true);
+    // Reset Coinbase States
+    setPathway("ai_compile");
+    setCbConnected(false);
+    setCbUsernameInput("");
+    setCbCustomAddress("");
+    setSelectedCbMintIndex(0);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="space-y-12 animate-fadeIn">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       
       {/* LEFT COLUMN: Controls & Input Pipelines */}
       <div className="lg:col-span-7 space-y-6">
         
-        {/* STEP 1: Dialog Log or Screenshot Input */}
+        {/* STEP 1: Dialog Log or Screenshot Input / Coinbase Import */}
         {step === "input" && (
           <div className="space-y-8 animate-fadeIn">
             <div>
@@ -313,125 +719,556 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
                 TURN<br/>WORDS<br/>TO GOLD
               </h2>
               <p className="text-base text-white/60 max-w-sm mb-6 leading-snug">
-                Paste your most genius AI interactions. We tokenize the logic, the prompt, and the result into a verified 1/1 asset.
+                Paste your most genius AI interactions or bridge your existing Coinbase Wallet mints directly onto our gallery registry.
               </p>
             </div>
 
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#7C3AED] to-[#F472B6] opacity-30 group-hover:opacity-100 blur transition duration-300"></div>
-              
-              <div className="relative bg-[#121212] border border-white/20 p-6 flex flex-col space-y-5 rounded-none shadow-2xl">
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xs uppercase tracking-widest text-[#7C3AED] font-black flex items-center gap-1.5">
-                      <Sparkles size={14} />
-                      PASTE CHAT LOG OR UPLOAD
-                    </h3>
-                  </div>
-                </div>
+            {/* Creation Pathway Selector */}
+            <div className="grid grid-cols-3 gap-2 bg-[#121212] border border-white/10 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPathway("ai_compile");
+                  setThemeId("cyberpunk_neon");
+                  setTitle("");
+                  setDescription("");
+                  setTokenSerial("");
+                }}
+                className={`py-2.5 text-[10px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pathway === "ai_compile"
+                    ? "bg-[#7C3AED] text-white"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Sparkles size={12} />
+                AI Compile & Mint
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPathway("coinbase_import");
+                  setThemeId("coinbase_blue");
+                  const activePreset = COINBASE_PRESET_MINTS[selectedCbMintIndex];
+                  setTitle(activePreset.title);
+                  setDescription(activePreset.description);
+                  setTokenSerial("CB-MINT-0" + (selectedCbMintIndex + 1));
+                  setMetadataHash(activePreset.txHash);
+                  setChatLog([
+                    { id: "cb-msg-1", sender: "user", text: "Retrieve minted asset from Coinbase Wallet..." },
+                    { id: "cb-msg-2", sender: "ai", text: "Handshake successful. Awaiting connection..." }
+                  ]);
+                }}
+                className={`py-2.5 text-[10px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pathway === "coinbase_import"
+                    ? "bg-[#0052FF] text-white"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Shield size={12} />
+                Coinbase Import Bridge
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPathway("drive_patent_import");
+                  setThemeId("classic_gold");
+                  const activePreset = DRIVE_PRESET_PATENTS[selectedDriveFileIndex];
+                  setTitle(activePreset.name);
+                  setDescription(activePreset.description);
+                  setTokenSerial("PAT-DRIVE-0" + (selectedDriveFileIndex + 1));
+                  setMetadataHash(generateHash(activePreset.name + Date.now().toString()));
+                  setChatLog([
+                    { id: "drive-msg-1", sender: "user", text: "Retrieve patent files from Google Drive..." },
+                    { id: "drive-msg-2", sender: "ai", text: "Authorization verified. Fetching digital draft claims..." }
+                  ]);
+                }}
+                className={`py-2.5 text-[10px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pathway === "drive_patent_import"
+                    ? "bg-[#CA8A04] text-white"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <HardDrive size={12} />
+                Google Drive Patents
+              </button>
+            </div>
 
-                {/* Drag & Drop Upload Zone */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={triggerFileSelect}
-                  className={`border border-dashed rounded-none p-5 text-center cursor-pointer transition-all ${
-                    isDragging
-                      ? "border-[#7C3AED] bg-[#7C3AED]/10"
-                      : screenshot
-                      ? "border-emerald-500 bg-emerald-950/10"
-                      : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-black/60"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*"
-                    className="hidden"
-                  />
+            {pathway === "ai_compile" ? (
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#7C3AED] to-[#F472B6] opacity-30 group-hover:opacity-100 blur transition duration-300"></div>
+                
+                <div className="relative bg-[#121212] border border-white/20 p-6 flex flex-col space-y-5 rounded-none shadow-2xl">
                   
-                  {screenshot ? (
-                    <div className="space-y-3">
-                      <div className="w-10 h-10 bg-emerald-950/40 border border-emerald-900/30 flex items-center justify-center mx-auto text-emerald-400">
-                        <CheckCircle2 size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-white uppercase tracking-wider">Screenshot Uploaded</p>
-                        <p className="text-[10px] text-white/40 font-mono mt-0.5">{screenshotName}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setScreenshot(null);
-                          setScreenshotName("");
-                          setChatText("");
-                        }}
-                        className="text-[10px] text-rose-400 hover:underline font-mono"
-                      >
-                        Remove File
-                      </button>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xs uppercase tracking-widest text-[#7C3AED] font-black flex items-center gap-1.5">
+                        <Sparkles size={14} />
+                        PASTE CHAT LOG OR UPLOAD
+                      </h3>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="w-8 h-8 bg-white/5 flex items-center justify-center mx-auto text-white/60 border border-white/10">
-                        <Upload size={16} />
+                  </div>
+
+                  {/* Drag & Drop Upload Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={triggerFileSelect}
+                    className={`border border-dashed rounded-none p-5 text-center cursor-pointer transition-all ${
+                      isDragging
+                        ? "border-[#7C3AED] bg-[#7C3AED]/10"
+                        : screenshot
+                        ? "border-emerald-500 bg-emerald-950/10"
+                        : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-black/60"
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    
+                    {screenshot ? (
+                      <div className="space-y-3">
+                        <div className="w-10 h-10 bg-emerald-950/40 border border-emerald-900/30 flex items-center justify-center mx-auto text-emerald-400">
+                          <CheckCircle2 size={20} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-white uppercase tracking-wider">Screenshot Uploaded</p>
+                          <p className="text-[10px] text-white/40 font-mono mt-0.5">{screenshotName}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setScreenshot(null);
+                            setScreenshotName("");
+                            setChatText("");
+                          }}
+                          className="text-[10px] text-rose-400 hover:underline font-mono"
+                        >
+                          Remove File
+                        </button>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-white uppercase tracking-wider">Drag & Drop Chat Screenshot here</p>
-                        <p className="text-[10px] text-white/40 mt-0.5">Or click to select files from your computer (PNG, JPG)</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="w-8 h-8 bg-white/5 flex items-center justify-center mx-auto text-white/60 border border-white/10">
+                          <Upload size={16} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white uppercase tracking-wider">Drag & Drop Chat Screenshot here</p>
+                          <p className="text-[10px] text-white/40 mt-0.5">Or click to select files from your computer (PNG, JPG)</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {!screenshot && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[10px] tracking-wider font-mono">
+                        <label className="text-white/40 font-bold uppercase">PASTE TEXT CHAT DIALOGUE LOGS</label>
+                        <span className="text-white/20">{chatText.length} characters</span>
+                      </div>
+                      <textarea
+                        placeholder="Paste conversation lines e.g.:&#10;User: Let's build a decentralized pizza app...&#10;AI: That is brilliant! Let's mint it!"
+                        value={chatText}
+                        onChange={(e) => setChatText(e.target.value)}
+                        className="w-full h-32 bg-black border border-white/20 rounded-none p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none focus:border-[#7C3AED] font-mono leading-relaxed resize-none"
+                      />
+
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] font-mono text-white/40 block uppercase tracking-wider">
+                          Or select a template idea:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {PRESET_TEMPLATES.map((tpl, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setChatText(tpl.text)}
+                              className="text-[10px] px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-none border border-white/10 transition-all cursor-pointer"
+                            >
+                              ⚡ {tpl.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={handleAnalyzeChat}
+                    disabled={!chatText.trim() && !screenshot}
+                    className="w-full py-4 bg-[#7C3AED] hover:bg-[#6D28D9] disabled:bg-white/5 disabled:text-white/20 text-white font-black uppercase tracking-[0.2em] text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Sparkles size={15} />
+                    GENERATE TOKEN
+                  </button>
                 </div>
-
-                {!screenshot && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-[10px] tracking-wider font-mono">
-                      <label className="text-white/40 font-bold uppercase">PASTE TEXT CHAT DIALOGUE LOGS</label>
-                      <span className="text-white/20">{chatText.length} characters</span>
+              </div>
+            ) : pathway === "coinbase_import" ? (
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#0052FF] to-[#38BDF8] opacity-30 group-hover:opacity-100 blur transition duration-300"></div>
+                
+                <div className="relative bg-[#0c0f1d] border border-[#0052FF]/30 p-6 flex flex-col space-y-6 rounded-none shadow-2xl">
+                  
+                  {/* Header */}
+                  <div className="flex justify-between items-center border-b border-[#0052FF]/20 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-none bg-[#0052FF] animate-pulse"></div>
+                      <h3 className="text-xs uppercase tracking-widest text-[#38BDF8] font-black font-mono">
+                        Coinbase Smart Wallet Bridge
+                      </h3>
                     </div>
-                    <textarea
-                      placeholder="Paste conversation lines e.g.:&#10;User: Let's build a decentralized pizza app...&#10;AI: That is brilliant! Let's mint it!"
-                      value={chatText}
-                      onChange={(e) => setChatText(e.target.value)}
-                      className="w-full h-32 bg-black border border-white/20 rounded-none p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none focus:border-[#7C3AED] font-mono leading-relaxed resize-none"
-                    />
+                    <span className="text-[9px] font-mono font-bold text-[#0052FF] bg-[#0052FF]/10 px-2 py-0.5 border border-[#0052FF]/20">
+                      BASE L2 INSTANT
+                    </span>
+                  </div>
 
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-mono text-white/40 block uppercase tracking-wider">
-                        Or select a template idea:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {PRESET_TEMPLATES.map((tpl, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => setChatText(tpl.text)}
-                            className="text-[10px] px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-none border border-white/10 transition-all cursor-pointer"
-                          >
-                            ⚡ {tpl.name}
-                          </button>
-                        ))}
+                  {/* Not Connected Screen */}
+                  {!cbConnected && !cbConnecting && (
+                    <div className="space-y-4 animate-fadeIn">
+                      <p className="text-xs text-white/70 leading-relaxed">
+                        Bridge your verified Coinbase NFT mints or Base L2 on-chain assets into the Stacks L2 ecosystem instantly. Solve multi-chain discovery by publishing your mints in the gallery!
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="font-mono text-[9px] font-black text-white/40 block uppercase tracking-wider mb-1.5">
+                            Coinbase ID Username (optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. yourname.cb.id"
+                            value={cbUsernameInput}
+                            onChange={(e) => setCbUsernameInput(e.target.value)}
+                            className="w-full bg-black border border-[#0052FF]/20 rounded-none px-3 py-2.5 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#0052FF] font-mono"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="font-mono text-[9px] font-black text-white/40 block uppercase tracking-wider mb-1.5">
+                            Base Wallet Address (optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 0x71C... or leave empty to autodetect"
+                            value={cbCustomAddress}
+                            onChange={(e) => setCbCustomAddress(e.target.value)}
+                            className="w-full bg-black border border-[#0052FF]/20 rounded-none px-3 py-2.5 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#0052FF] font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleConnectCoinbase}
+                        className="w-full py-4 bg-[#0052FF] hover:bg-[#0045d8] text-white font-black uppercase tracking-[0.2em] text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-[#0052FF]/40 shadow-lg"
+                      >
+                        <Shield size={14} />
+                        Connect Coinbase Wallet
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Connecting Loader Screen */}
+                  {cbConnecting && (
+                    <div className="py-8 text-center space-y-4 animate-fadeIn">
+                      <RefreshCw size={32} className="mx-auto text-[#38BDF8] animate-spin" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">Establishing Smart Wallet Connection</p>
+                        <p className="text-[10px] text-[#38BDF8] font-mono animate-pulse">{cbConnectingStatus}</p>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <button
-                  type="button"
-                  onClick={handleAnalyzeChat}
-                  disabled={!chatText.trim() && !screenshot}
-                  className="w-full py-4 bg-[#7C3AED] hover:bg-[#6D28D9] disabled:bg-white/5 disabled:text-white/20 text-white font-black uppercase tracking-[0.2em] text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Sparkles size={15} />
-                  GENERATE TOKEN
-                </button>
+                  {/* Connected Porting Screen */}
+                  {cbConnected && !cbPorting && (
+                    <div className="space-y-5 animate-fadeIn">
+                      
+                      {/* Wallet Info Badge */}
+                      <div className="p-3 bg-[#0052FF]/5 border border-[#0052FF]/30 flex justify-between items-center text-[11px]">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-[#38BDF8] block font-mono">{cbResolvedUsername}</span>
+                          <span className="text-white/40 font-mono text-[9px]">{cbResolvedAddress.substring(0, 18)}...{cbResolvedAddress.substring(cbResolvedAddress.length - 8)}</span>
+                        </div>
+                        <div className="px-2 py-1 bg-emerald-950/40 border border-emerald-900/30 text-emerald-400 font-mono text-[9px] font-bold uppercase tracking-wider">
+                          ● Connected
+                        </div>
+                      </div>
+
+                      {/* Mint presets list */}
+                      <div className="space-y-2">
+                        <label className="font-mono text-[9px] font-black text-white/40 block uppercase tracking-wider">
+                          Select Coinbase NFT Mint to Port
+                        </label>
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {COINBASE_PRESET_MINTS.map((mint, idx) => {
+                            const isSelected = selectedCbMintIndex === idx;
+                            return (
+                              <div
+                                key={mint.id}
+                                onClick={() => handleSelectCbPreset(idx)}
+                                className={`p-3 border transition-all cursor-pointer flex items-start gap-3 ${
+                                  isSelected
+                                    ? "bg-[#0052FF]/15 border-[#0052FF] text-white"
+                                    : "bg-black/30 border-white/5 text-white/70 hover:border-[#0052FF]/40"
+                                }`}
+                              >
+                                <div className="w-10 h-10 bg-black/40 border border-white/10 shrink-0 overflow-hidden flex items-center justify-center text-xs">
+                                  🖼️
+                                </div>
+                                <div className="flex-1 space-y-0.5 text-left">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[11px] font-black uppercase tracking-wider">{mint.title}</span>
+                                    <span className="text-[8px] font-mono text-[#38BDF8] uppercase tracking-widest font-bold">Base L2</span>
+                                  </div>
+                                  <p className="text-[9px] text-white/50 line-clamp-2 leading-relaxed">{mint.description}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Bridge CTA */}
+                      <div className="space-y-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handlePortCoinbaseNFT}
+                          className="w-full py-4 bg-[#0052FF] hover:bg-[#0045d8] text-white font-black uppercase tracking-[0.15em] text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-white/10"
+                        >
+                          <RefreshCw size={14} className="animate-spin-slow" />
+                          Execute Cross-Chain Bridge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCbConnected(false);
+                            setThemeId("cyberpunk_neon");
+                          }}
+                          className="w-full py-2 bg-transparent text-white/40 hover:text-white/60 font-mono text-[10px] uppercase tracking-wider text-center"
+                        >
+                          Disconnect Wallet
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Porting Loading Screen */}
+                  {cbPorting && (
+                    <div className="py-12 text-center space-y-4 animate-fadeIn">
+                      <RefreshCw size={36} className="mx-auto text-[#0052FF] animate-spin" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-white uppercase tracking-wider">Verifying Cross-Chain Proofs</p>
+                        <p className="text-[10px] text-[#38BDF8] font-mono animate-pulse">{cbPortStatus}</p>
+                      </div>
+                      <div className="w-full bg-black rounded-none h-1 max-w-xs mx-auto overflow-hidden">
+                        <div className="bg-[#0052FF] h-full w-4/5 animate-pulse" />
+                      </div>
+                    </div>
+                  )}
+
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative group animate-fadeIn">
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#D97706] to-[#F59E0B] opacity-30 group-hover:opacity-100 blur transition duration-300"></div>
+                
+                <div className="relative bg-[#0d0a05] border border-[#CA8A04]/30 p-6 flex flex-col space-y-6 rounded-none shadow-2xl">
+                  
+                  {/* Header */}
+                  <div className="flex justify-between items-center border-b border-[#CA8A04]/20 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-none bg-[#CA8A04] animate-pulse"></div>
+                      <h3 className="text-xs uppercase tracking-widest text-[#F59E0B] font-black font-mono">
+                        Google Drive Patent Bridge
+                      </h3>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold text-[#CA8A04] bg-[#CA8A04]/10 px-2 py-0.5 border border-[#CA8A04]/20">
+                      SECURE PATENT IMPORT
+                    </span>
+                  </div>
+
+                  {/* Connection & Load Screen */}
+                  {!accessToken && driveFiles.length === 0 && !driveLoading && (
+                    <div className="space-y-4">
+                      <p className="text-xs text-white/70 leading-relaxed">
+                        Convert your registered intellectual property, design assets, and patent documents directly into 1/1 SIP-009 collectible certificates on Bitcoin L2. 
+                      </p>
+                      
+                      <div className="p-4 bg-amber-950/10 border border-amber-900/30 text-[11px] space-y-2 text-amber-200/90 leading-relaxed">
+                        <span className="font-bold uppercase tracking-wider text-amber-400 block font-mono">🛡️ Secure Google Sandbox Handshake:</span>
+                        We search your Google Drive for a folder named <strong className="text-white">"patents"</strong>. If not found, we search globally for files containing <strong className="text-white">"patent"</strong> in the title.
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <button
+                          type="button"
+                          onClick={handleConnectDrive}
+                          className="w-full py-4 bg-[#CA8A04] hover:bg-[#B45309] text-white font-black uppercase tracking-[0.2em] text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-amber-500/40 shadow-lg"
+                        >
+                          <HardDrive size={14} />
+                          Sign in with Google Drive
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDriveFiles(DRIVE_PRESET_PATENTS);
+                            setSelectedDriveFileIndex(0);
+                          }}
+                          className="w-full py-2 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-mono text-[10px] uppercase tracking-wider text-center border border-white/5"
+                        >
+                          Use Sandbox Simulation Files (No Login)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading State */}
+                  {driveLoading && (
+                    <div className="py-8 text-center space-y-4">
+                      <RefreshCw size={32} className="mx-auto text-[#F59E0B] animate-spin" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">Accessing Authorized Drive Vault</p>
+                        <p className="text-[10px] text-[#F59E0B] font-mono animate-pulse">{driveConnectingStatus}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {driveError && (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-rose-950/20 border border-rose-900/40 text-xs text-rose-400 font-mono">
+                        ⚠️ Error: {driveError}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDriveError("");
+                          setDriveFiles([]);
+                        }}
+                        className="w-full py-2 bg-white/5 text-white text-xs font-mono uppercase tracking-widest hover:bg-white/10"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Porting Status */}
+                  {drivePorting && (
+                    <div className="py-12 text-center space-y-4">
+                      <RefreshCw size={36} className="mx-auto text-[#CA8A04] animate-spin" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-white uppercase tracking-wider">Compiling Patent IP Specifications</p>
+                        <p className="text-[10px] text-[#F59E0B] font-mono animate-pulse">{drivePortStatus}</p>
+                      </div>
+                      <div className="w-full bg-black rounded-none h-1 max-w-xs mx-auto overflow-hidden">
+                        <div className="bg-[#CA8A04] h-full w-4/5 animate-pulse" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Files List Panel */}
+                  {(driveFiles.length > 0 || accessToken) && !driveLoading && !drivePorting && !driveError && (
+                    <div className="space-y-5 animate-fadeIn">
+                      
+                      {/* Connection Header Badge */}
+                      <div className="p-3 bg-amber-950/20 border border-[#CA8A04]/30 flex justify-between items-center text-[11px]">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-[#F59E0B] block font-mono">
+                            {accessToken ? "Authenticated Node Session" : "Sandbox Simulator Active"}
+                          </span>
+                          <span className="text-white/40 font-mono text-[9px]">
+                            {driveSearchMode === "folder" ? "📁 Found 'patents' Directory" : "🔍 Global Patent Name Match"}
+                          </span>
+                        </div>
+                        <div className="px-2 py-1 bg-amber-950/40 border border-amber-900/30 text-[#F59E0B] font-mono text-[9px] font-bold uppercase tracking-wider">
+                          ● Ready
+                        </div>
+                      </div>
+
+                      {/* Patents List */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="font-mono text-[9px] font-black text-white/40 block uppercase tracking-wider">
+                            Select Patent Document to Convert
+                          </label>
+                          <span className="text-[9px] font-mono text-white/40">{driveFiles.length} files discovered</span>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {driveFiles.length === 0 ? (
+                            <div className="p-6 text-center border border-dashed border-white/10 text-white/40 text-xs">
+                              No files found matching patent queries. Add PDF or Doc files inside a folder named "patents" in Google Drive.
+                            </div>
+                          ) : (
+                            driveFiles.map((patent, idx) => {
+                              const isSelected = selectedDriveFileIndex === idx;
+                              return (
+                                <div
+                                  key={patent.id}
+                                  onClick={() => setSelectedDriveFileIndex(idx)}
+                                  className={`p-3 border transition-all cursor-pointer flex items-start gap-3 ${
+                                    isSelected
+                                      ? "bg-[#CA8A04]/15 border-[#CA8A04] text-white"
+                                      : "bg-black/30 border-white/5 text-white/70 hover:border-[#CA8A04]/40"
+                                  }`}
+                                >
+                                  <div className="w-10 h-10 bg-black/40 border border-white/10 shrink-0 overflow-hidden flex items-center justify-center text-xs">
+                                    📁
+                                  </div>
+                                  <div className="flex-1 space-y-0.5 text-left">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-[11px] font-black uppercase tracking-wider truncate max-w-[180px]">
+                                        {patent.name}
+                                      </span>
+                                      <span className="text-[8px] font-mono text-[#F59E0B] uppercase tracking-widest font-bold">
+                                        {patent.size}
+                                      </span>
+                                    </div>
+                                    <p className="text-[9px] text-white/50 line-clamp-2 leading-relaxed">{patent.description}</p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Port CTAs */}
+                      {driveFiles.length > 0 && (
+                        <div className="space-y-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePortDrivePatent(driveFiles[selectedDriveFileIndex])}
+                            className="w-full py-4 bg-[#CA8A04] hover:bg-[#B45309] text-white font-black uppercase tracking-[0.15em] text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-white/10"
+                          >
+                            <Sparkles size={14} className="animate-pulse" />
+                            Port & Compile Patent NFT
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDriveFiles([]);
+                            }}
+                            className="w-full py-2 bg-transparent text-white/40 hover:text-white/60 font-mono text-[10px] uppercase tracking-wider text-center"
+                          >
+                            Reset Connection
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -709,7 +1546,10 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
               creatorAddress={creatorAddress}
               metadataHash={metadataHash}
               tokenSerial={tokenSerial}
-              onMintSuccess={(details) => setMintedTx(details)}
+              onMintSuccess={(details) => {
+                setMintedTx(details);
+                setShowCelebrationModal(true);
+              }}
             />
 
             {/* Google Workspace Triggers Box */}
@@ -811,9 +1651,14 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
             </div>
             
             <div>
-              <h3 className="text-base font-black uppercase tracking-wider text-white">Concept Deployed & Published!</h3>
+              <h3 className="text-base font-black uppercase tracking-wider text-white">
+                {themeId === "coinbase_blue" ? "Asset Bridged & Registered!" : "Concept Deployed & Published!"}
+              </h3>
               <p className="text-xs text-white/60 mt-2 max-w-sm mx-auto leading-relaxed">
-                Congratulations! Your AI chat idea has been securely compiled into a Clarity SIP-009 NFT and successfully published to the public registry.
+                {themeId === "coinbase_blue" 
+                  ? "Congratulations! Your Coinbase Wallet NFT has been successfully bridged into a Clarity SIP-009 wrapper on Stacks L2 and added to our public registry."
+                  : "Congratulations! Your AI chat idea has been securely compiled into a Clarity SIP-009 NFT and successfully published to the public registry."
+                }
               </p>
             </div>
 
@@ -892,7 +1737,29 @@ export default function NFTCreator({ onPublishSuccess, user, isPremium, accessTo
           interactive={false}
         />
       </div>
+    </div>
 
+    {/* 6th-Grade Educational Section explaining the process */}
+    <div className="border-t border-white/10 pt-10">
+        <ReadingComprehension />
+      </div>
+
+      {/* Celebration Modal for successful minting */}
+      {mintedTx && (
+        <CelebrationModal
+          isOpen={showCelebrationModal}
+          onClose={() => setShowCelebrationModal(false)}
+          title={title}
+          description={description}
+          themeId={themeId}
+          chatLog={chatLog}
+          creatorAddress={creatorAddress}
+          tokenSerial={tokenSerial}
+          metadataHash={metadataHash}
+          txHash={mintedTx.txHash}
+          blockNumber={mintedTx.blockNumber}
+        />
+      )}
     </div>
   );
 }

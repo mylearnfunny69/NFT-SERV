@@ -5,7 +5,7 @@ export interface ChatMessage {
   timestamp?: string;
 }
 
-export type NFTThemeId = 'classic_gold' | 'cyberpunk_neon' | 'base44_blue' | 'emerald_gpt' | 'obsidian_dark' | 'bold_purple';
+export type NFTThemeId = 'classic_gold' | 'cyberpunk_neon' | 'base44_blue' | 'emerald_gpt' | 'obsidian_dark' | 'bold_purple' | 'coinbase_blue';
 
 export interface NFTTheme {
   id: NFTThemeId;
@@ -152,5 +152,20 @@ export const NFT_THEMES: Record<NFTThemeId, NFTTheme> = {
     bubbleAiText: '#FFFFFF',
     fontFamily: '"Outfit", sans-serif',
     glowColor: 'rgba(124, 58, 237, 0.7)',
+  },
+  coinbase_blue: {
+    id: 'coinbase_blue',
+    name: 'Coinbase Verified Blue',
+    description: 'Authoritative Coinbase Blue signature style with electric accents and proof of Coinbase verified mint status.',
+    borderColor: '#0052FF',
+    bgGradient: 'linear-gradient(135deg, #010825 0%, #001242 60%, #002c9a 100%)',
+    textColor: '#FFFFFF',
+    accentColor: '#38BDF8',
+    bubbleUserBg: 'rgba(0, 82, 255, 0.25)',
+    bubbleUserText: '#38BDF8',
+    bubbleAiBg: 'rgba(255, 255, 255, 0.08)',
+    bubbleAiText: '#FFFFFF',
+    fontFamily: 'system-ui, sans-serif',
+    glowColor: 'rgba(0, 82, 255, 0.65)',
   }
 };

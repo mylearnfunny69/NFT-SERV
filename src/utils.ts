@@ -66,6 +66,10 @@ export function renderNFTCardOnCanvas(
     grad.addColorStop(0, "#080808");
     grad.addColorStop(0.6, "#121212");
     grad.addColorStop(1, "#1e1b4b");
+  } else if (themeId === 'coinbase_blue') {
+    grad.addColorStop(0, "#010825");
+    grad.addColorStop(0.5, "#001242");
+    grad.addColorStop(1, "#002c9a");
   } else {
     grad.addColorStop(0, "#030712");
     grad.addColorStop(0.5, "#111827");
@@ -189,9 +193,38 @@ export function renderNFTCardOnCanvas(
 
   // Concept Title
   ctx.fillStyle = theme.accentColor;
-  ctx.font = `bold 16px ${theme.fontFamily === 'system-ui, sans-serif' ? 'Inter' : theme.fontFamily}`;
+  ctx.font = `bold 14px ${theme.fontFamily === 'system-ui, sans-serif' ? 'Inter' : theme.fontFamily}`;
   ctx.textAlign = "left";
-  ctx.fillText(title.toUpperCase(), 42, bottomFrameY + 25);
+  // Truncate title if it is too long to prevent overlapping with rarity stamp
+  const displayTitle = title.toUpperCase().length > 25 ? title.toUpperCase().substring(0, 25) + "..." : title.toUpperCase();
+  ctx.fillText(displayTitle, 42, bottomFrameY + 25);
+
+  // Concept Rarity Label & Score Tag
+  const rarityObj = calculateRarityScore({ title, description, themeId, chatLog, metadataHash, tokenSerial });
+  const rarityTagText = `${rarityObj.label.toUpperCase()} (${rarityObj.score}/100)`;
+  ctx.font = "bold 9px 'JetBrains Mono', monospace";
+  ctx.textAlign = "right";
+  
+  let tagColor = "#7C3AED";
+  if (rarityObj.label === "Legendary") tagColor = "#D97706"; // Amber
+  else if (rarityObj.label === "Epic") tagColor = "#7C3AED"; // Purple
+  else if (rarityObj.label === "Rare") tagColor = "#2563EB"; // Blue
+  else tagColor = "#4B5563"; // Gray
+
+  ctx.fillStyle = tagColor;
+  const tagWidth = ctx.measureText(rarityTagText).width + 12;
+  const tagHeight = 16;
+  const tagX = width - 42 - tagWidth;
+  const tagY = bottomFrameY + 12;
+  
+  drawRoundedRect(ctx, tagX, tagY, tagWidth, tagHeight, 4);
+  ctx.fill();
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(rarityTagText, tagX + tagWidth / 2, tagY + tagHeight / 2);
+  ctx.textBaseline = "alphabetic";
 
   // Concept Short description (wrapped lines)
   ctx.fillStyle = "#D1D5DB";
@@ -314,4 +347,102 @@ export function getClarityContractCode(tokenTitle: string, creatorAddress: strin
     )
   )
 )`;
+}
+
+// Rarity Score Calculation based on NFT Metadata properties/traits
+export function calculateRarityScore(nft: {
+  title: string;
+  description: string;
+  themeId: string;
+  chatLog?: any[];
+  isOriginalIdea?: boolean;
+  metadataHash?: string;
+  tokenSerial?: string;
+}) {
+  let score = 35; // baseline score
+  const traits: { trait_type: string; value: string; rarity: string; score: number }[] = [];
+
+  // Theme rarity evaluation
+  let themeBonus = 10;
+  let themeRarity = "Common";
+  if (nft.themeId === "coinbase_blue" || nft.themeId === "classic_gold") {
+    themeBonus = 30;
+    themeRarity = "Legendary";
+  } else if (nft.themeId === "cyberpunk_neon" || nft.themeId === "bold_purple") {
+    themeBonus = 20;
+    themeRarity = "Rare";
+  } else if (nft.themeId === "obsidian_dark") {
+    themeBonus = 25;
+    themeRarity = "Epic";
+  }
+  score += themeBonus;
+  traits.push({ trait_type: "Design Theme", value: nft.themeId, rarity: themeRarity, score: themeBonus });
+
+  // Chat transcript dialogue rounds
+  const chatCount = nft.chatLog?.length || 0;
+  let chatBonus = 5;
+  let chatRarity = "Common";
+  if (chatCount >= 4) {
+    chatBonus = 25;
+    chatRarity = "Legendary";
+  } else if (chatCount === 3) {
+    chatBonus = 18;
+    chatRarity = "Epic";
+  } else if (chatCount === 2) {
+    chatBonus = 10;
+    chatRarity = "Rare";
+  }
+  score += chatBonus;
+  traits.push({ trait_type: "Dialogue Depth", value: `${chatCount} Rounds`, rarity: chatRarity, score: chatBonus });
+
+  // Tech Density / Terminology Matching
+  const descLower = nft.description.toLowerCase();
+  const titleLower = nft.title.toLowerCase();
+  const techKeywords = ["fusion", "quantum", "zk-snark", "zero-knowledge", "mhd", "bitcoin", "stacks", "sovereignty", "differential", "node", "deception", "agape", "tithe", "reactor"];
+  const matches = techKeywords.filter(k => descLower.includes(k) || titleLower.includes(k));
+  let techBonus = Math.min(25, matches.length * 5);
+  let techRarity = "Common";
+  if (techBonus >= 20) techRarity = "Legendary";
+  else if (techBonus >= 10) techRarity = "Rare";
+  score += techBonus;
+  traits.push({ trait_type: "Tech Keywords", value: `${matches.length} matches`, rarity: techRarity, score: techBonus });
+
+  // Original ideation credit
+  const origBonus = nft.isOriginalIdea !== false ? 10 : 0;
+  score += origBonus;
+  traits.push({ trait_type: "Ideation Model", value: nft.isOriginalIdea !== false ? "Original" : "Standard", rarity: nft.isOriginalIdea !== false ? "Rare" : "Common", score: origBonus });
+
+  // Hash check signature bonus
+  let hashBonus = 5;
+  if (nft.metadataHash && (nft.metadataHash.includes("000") || nft.metadataHash.includes("f00") || nft.metadataHash.includes("stx"))) {
+    hashBonus = 10;
+  }
+  score += hashBonus;
+
+  const finalScore = Math.min(100, score);
+  
+  let label = "Common";
+  let color = "text-gray-400 border-gray-500/20 bg-gray-500/5";
+  let bgClass = "bg-gray-500/10";
+  if (finalScore >= 85) {
+    label = "Legendary";
+    color = "text-amber-400 border-amber-500/30 bg-amber-500/10";
+    bgClass = "bg-amber-500/20";
+  } else if (finalScore >= 70) {
+    label = "Epic";
+    color = "text-purple-400 border-purple-500/30 bg-purple-500/10";
+    bgClass = "bg-purple-500/20";
+  } else if (finalScore >= 50) {
+    label = "Rare";
+    color = "text-blue-400 border-blue-500/30 bg-blue-500/10";
+    bgClass = "bg-blue-500/20";
+  }
+
+  return {
+    score: finalScore,
+    label,
+    color,
+    bgClass,
+    traits
+  };
 }
