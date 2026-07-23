@@ -8,14 +8,15 @@ import CampaignHub from "./components/CampaignHub.tsx";
 import ManusStudio from "./components/ManusStudio.tsx";
 import ComplianceDrawer from "./components/ComplianceDrawer.tsx";
 import EthicalAIHub from "./components/EthicalAIHub.tsx";
+import DomainHub from "./components/DomainHub.tsx";
 import NFTCard from "./components/NFTCard.tsx";
 import { User } from "firebase/auth";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db as firestoreDb } from "./lib/firebase.ts";
-import { Sparkles, TrendingUp, Cpu, Flame, Compass, Bell, AlertCircle, Shield, Network, Megaphone } from "lucide-react";
+import { Sparkles, TrendingUp, Cpu, Flame, Compass, Bell, AlertCircle, Shield, Network, Megaphone, Globe } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"manus" | "feed" | "creator" | "governance" | "nodes" | "campaign" | "ethicalai">("ethicalai");
+  const [activeTab, setActiveTab] = useState<"manus" | "feed" | "creator" | "governance" | "nodes" | "campaign" | "ethicalai" | "domain">("ethicalai");
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -551,10 +552,10 @@ export default function App() {
               </span>
             </div>
             <h1 className="text-4xl font-black tracking-tighter uppercase text-white flex items-baseline gap-1">
-              Z/OS <span className="text-[#7C3AED] bg-gradient-to-r from-[#7C3AED] to-[#F472B6] bg-clip-text text-transparent">MANUS</span> STUDIO
+              ZENO <span className="text-[#7C3AED] bg-gradient-to-r from-[#7C3AED] to-[#F472B6] bg-clip-text text-transparent">INFINITY</span>
             </h1>
-            <p className="text-sm text-white/60 max-w-xl leading-relaxed">
-              Compile your custom PC builds, graffiti clothing, and modern design assets. Orchestrate automated multi-channel publishing to Amazon, Facebook, and Instagram via the AWS Manus agentic pipeline.
+            <p className="text-sm text-white/70 max-w-2xl leading-relaxed font-sans">
+              <strong className="text-white">The AIM — AI for misfits:</strong> Ethical Intelligence applied to man and the unification of the Human AI family. Orchestrate custom PC builds, apparel designs, sovereign digital assets, and multi-channel publishing.
             </p>
           </div>
 
@@ -562,14 +563,25 @@ export default function App() {
           <div className="flex flex-wrap bg-black border border-white/10 p-1 rounded-none w-full md:w-auto gap-1 sm:gap-0">
             <button
               onClick={() => setActiveTab("manus")}
-              className={`flex-1 md:flex-none px-5 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 md:flex-none px-4 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 activeTab === "manus"
                   ? "bg-white text-black font-black"
                   : "text-white/60 hover:text-white hover:bg-white/5"
               }`}
             >
               <Cpu size={14} className="text-[#7C3AED]" />
-              Z/OS Manus Studio
+              Zeno Studio
+            </button>
+            <button
+              onClick={() => setActiveTab("domain")}
+              className={`flex-1 md:flex-none px-4 py-3 rounded-none text-[11px] tracking-widest uppercase font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "domain"
+                  ? "bg-white text-black font-black"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Globe size={14} className="text-emerald-400" />
+              Domain & Web
             </button>
             <button
               onClick={() => setActiveTab("feed")}
@@ -679,6 +691,8 @@ export default function App() {
         <main className="animate-fadeIn">
           {activeTab === "manus" ? (
             <ManusStudio />
+          ) : activeTab === "domain" ? (
+            <DomainHub />
           ) : activeTab === "feed" ? (
             <NFTFeed />
           ) : activeTab === "creator" ? (

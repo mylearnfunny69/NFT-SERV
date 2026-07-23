@@ -1234,7 +1234,7 @@ async function startServer() {
             {
               insertText: {
                 location: { index: 1 },
-                text: `PATENT INTELLECTUAL PROPERTY VALUATION REPORT\n============================================================\nPatent Title: ${patent.title}\nSerial Token: ${patent.tokenSerial || "N/A"}\nDate Compiled: ${new Date().toLocaleDateString()}\n\n1. SOVEREIGN COMMERCIAL VALUATION\n------------------------------------------------------------\nEstimated Market Valuation: ${analysis.valuationRange}\nSovereign Innovation Rating: ${analysis.innovationScore} / 100\nTechnology Readiness Level: ${analysis.techReadinessLevel}\n\n2. EXECUTIVE ANALYSIS SUMMARY\n------------------------------------------------------------\n${analysis.executiveSummary}\n\n3. COMMERCIALIZATION & LICENSING ROADMAP\n------------------------------------------------------------\n${analysis.commercializationPathway}\n\n4. IMAGE ASSETS & CURATION CHECKLIST (PREPARATION MODE)\n------------------------------------------------------------\nYou have indicated you have "a ton of images" ready to curate. Below are the suggested technical figures pre-configured for this patent. To prepare these files, please export your images matching the standard names and upload them into this Google Drive subfolder.\n${analysis.imagePreparationChecklist.map((fig: any) => `\n[ ] ${fig.figure}: ${fig.title}\n    Suggested Filename: ${fig.filename}\n    Curation Guidelines: ${fig.guidelines}\n`).join("\n")}\n\n------------------------------------------------------------\nReport compiled automatically by Z/OS Manus Studio Google Enterprise Bridge.\n`
+                text: `PATENT INTELLECTUAL PROPERTY VALUATION REPORT\n============================================================\nPatent Title: ${patent.title}\nSerial Token: ${patent.tokenSerial || "N/A"}\nDate Compiled: ${new Date().toLocaleDateString()}\n\n1. SOVEREIGN COMMERCIAL VALUATION\n------------------------------------------------------------\nEstimated Market Valuation: ${analysis.valuationRange}\nSovereign Innovation Rating: ${analysis.innovationScore} / 100\nTechnology Readiness Level: ${analysis.techReadinessLevel}\n\n2. EXECUTIVE ANALYSIS SUMMARY\n------------------------------------------------------------\n${analysis.executiveSummary}\n\n3. COMMERCIALIZATION & LICENSING ROADMAP\n------------------------------------------------------------\n${analysis.commercializationPathway}\n\n4. IMAGE ASSETS & CURATION CHECKLIST (PREPARATION MODE)\n------------------------------------------------------------\nYou have indicated you have "a ton of images" ready to curate. Below are the suggested technical figures pre-configured for this patent. To prepare these files, please export your images matching the standard names and upload them into this Google Drive subfolder.\n${analysis.imagePreparationChecklist.map((fig: any) => `\n[ ] ${fig.figure}: ${fig.title}\n    Suggested Filename: ${fig.filename}\n    Curation Guidelines: ${fig.guidelines}\n`).join("\n")}\n\n------------------------------------------------------------\nReport compiled automatically by Zeno Infinity Studio Google Enterprise Bridge.\n`
               }
             }
           ];
@@ -1277,7 +1277,7 @@ async function startServer() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `Z/OS Manus - Sovereign Patent Valuation Dashboard (${new Date().toLocaleDateString()})`,
+          name: `Zeno Infinity - Sovereign Patent Valuation Dashboard (${new Date().toLocaleDateString()})`,
           mimeType: "application/vnd.google-apps.spreadsheet",
           parents: [masterFolderId],
         }),
@@ -1338,6 +1338,133 @@ async function startServer() {
     });
   });
 
+  // API 7.8: Universal Bulk Valuation & Audit Report Generation Endpoint
+  app.post("/api/reports/bulk-valuation", async (req, res) => {
+    const ai = getGeminiClient();
+
+    // Fetch existing patent list from PostgreSQL database
+    let patentList: any[] = [];
+    try {
+      patentList = await db.select().from(nfts);
+    } catch (err) {
+      console.warn("DB pull failed, seeding default portfolio for bulk report:", err);
+    }
+
+    if (patentList.length === 0) {
+      patentList = [
+        {
+          id: "seed-nft-1",
+          title: "Proof of Pizza Protocol",
+          description: "A decentralized consensus system that rewards nodes for baking real Italian sourdough pizzas. Verified via vision AI and zero-knowledge proofs. Governed by a Stacks L2 contract.",
+          tokenSerial: "STX-CHAT-0001",
+        },
+        {
+          id: "seed-nft-2",
+          title: "Quantum Consciousness Oracle",
+          description: "A cryptographic blueprint for utilizing quantum computer noise to prompt deep metaphysical queries, translating physical chaos into structured intellectual assets.",
+          tokenSerial: "STX-CHAT-0002",
+        },
+        {
+          id: "seed-nft-3",
+          title: "Zeno Sovereign Mesh Node Blueprint",
+          description: "Hardware specifications and wireless peer-to-peer protocols for sovereign off-grid AI compute nodes with localized LLM inference.",
+          tokenSerial: "STX-CHAT-0003",
+        }
+      ];
+    }
+
+    let bulkReportData: any = null;
+
+    if (ai) {
+      try {
+        const prompt = `
+        You are the Chief Intellectual Property Analyst for Zeno Infinity (The AIM — AI for misfits).
+        Analyze the following full sovereign portfolio of ${patentList.length} patents / digital assets:
+
+        ${JSON.stringify(patentList.map(p => ({ title: p.title, description: p.description, serial: p.tokenSerial || p.id })))}
+
+        Generate a high-grade corporate Bulk Portfolio Valuation & Audit Report.
+        Return ONLY a strict raw JSON object (no markdown, no code fences) matching this structure:
+        {
+          "reportTitle": "Zeno Infinity Sovereign IP Bulk Portfolio Audit",
+          "generatedAt": "${new Date().toISOString()}",
+          "totalPortfolioValuationEstimate": "$450,000 - $780,000 USD",
+          "averageInnovationScore": 91,
+          "executiveSummary": "Comprehensive audit summary of the IP portfolio...",
+          "strategicRecommendations": [
+            "Recommendation 1",
+            "Recommendation 2",
+            "Recommendation 3"
+          ],
+          "itemizedValuations": [
+            {
+              "title": "Item Title",
+              "serial": "Item Serial",
+              "valuationRange": "$120,000 - $180,000 USD",
+              "innovationScore": 92,
+              "techReadinessLevel": "TRL-4 Lab Validated",
+              "commercialLicensingPotential": "High / Secondary Royalty Market",
+              "keyStrengths": "Strengths description...",
+              "curationFigures": [
+                "Figure 1: Architectural Overview",
+                "Figure 2: Protocol Diagram"
+              ]
+            }
+          ]
+        }
+        `;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
+
+        const rawText = response.text?.trim() || "";
+        bulkReportData = JSON.parse(rawText);
+      } catch (geminiErr: any) {
+        console.warn("Gemini bulk valuation error, generating local fallback report:", geminiErr);
+      }
+    }
+
+    if (!bulkReportData) {
+      bulkReportData = {
+        reportTitle: "Zeno Infinity Sovereign IP Bulk Portfolio Audit",
+        generatedAt: new Date().toISOString(),
+        totalPortfolioValuationEstimate: "$480,000 - $720,000 USD",
+        averageInnovationScore: 89,
+        executiveSummary: "The Zeno Infinity IP portfolio represents a sovereign combination of decentralized AI consensus, hardware specifications, and cryptographic proof protocols anchored on Stacks L2 and Bitcoin.",
+        strategicRecommendations: [
+          "Establish secondary licensing pools for Stacks L2 tokenized assets on zenonft.lol",
+          "Publish technical figure spec reports to Google Drive / Docs IP registries",
+          "Deploy automated multi-channel marketing campaigns across Facebook, Instagram, and Amazon"
+        ],
+        itemizedValuations: patentList.map((p, idx) => ({
+          title: p.title,
+          serial: p.tokenSerial || `STX-CHAT-000${idx + 1}`,
+          valuationRange: `$${140 + idx * 35},000 - $${210 + idx * 45},000 USD`,
+          innovationScore: 88 + (idx * 3) % 10,
+          techReadinessLevel: "TRL-3 Staged Conceptual Model",
+          commercialLicensingPotential: "High / Enterprise API Licensing",
+          keyStrengths: `Cryptographic provenance on Stacks L2 for ${p.title}.`,
+          curationFigures: [
+            "Figure 1: Architecture & Pipeline Diagram",
+            "Figure 2: User Dashboard Wireframe",
+            "Figure 3: Settlement Chronology"
+          ]
+        }))
+      };
+    }
+
+    res.json({
+      success: true,
+      report: bulkReportData,
+      apiKeySource: "Universal AI Studio Gemini Key"
+    });
+  });
+
   // API 8: Manus Pipeline Orchestrator (AWS Bedrock + AWS Lambda simulation via Gemini)
   app.post("/api/manus/pipeline", async (req, res) => {
     const { title, prompt, category } = req.body;
@@ -1350,7 +1477,7 @@ async function startServer() {
 
     if (ai) {
       try {
-        const systemPrompt = `You are the lead AI developer in the Z/OS Manus Studio system. You orchestrate a simulation of a two-agent AWS pipeline:
+        const systemPrompt = `You are the lead AI developer in the Zeno Infinity Studio system. You orchestrate a simulation of a two-agent AWS pipeline:
 Agent 1: Content Generator (Amazon Bedrock) - Expert copywriter for high-end custom PC rigs, modern graffiti streetwear, and futuristic tactical designs.
 Agent 2: Asset Processor (AWS Lambda) - Formats sizes, metadata, logistics specs, and retail tag structures for distribution channels.
 

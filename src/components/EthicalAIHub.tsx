@@ -19,11 +19,11 @@ export default function EthicalAIHub() {
   const initialApps: EthicalApp[] = [
     {
       id: "app-1",
-      name: "Z/OS Manus Studio",
+      name: "Zeno Infinity Studio",
       description: "Compile customized hardware blueprints, hardware-level PC configurations, and luxury graffiti apparel. Orchestrates multi-channel automated publishing pipelines across AWS, Facebook, and Instagram.",
       category: "AI Agentic Pipeline",
       creator: "SP3JP0NVA0S3ZOS...R8NZV",
-      url: "https://manus.ethicalai.lol",
+      url: "https://zenoinfinity.ethicalai.lol",
       tithePercentage: 10,
       nonDeceptionVerified: true,
       privacyAssured: true,

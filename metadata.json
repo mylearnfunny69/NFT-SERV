@@ -1,6 +1,6 @@
 {
-  "name": "AI Chat NFT Publisher",
-  "description": "Orchestrate your futuristic PC builds, custom modern graffiti apparel, and sovereign digital assets. Automatically generate copywriting and publish to Amazon, Facebook, and Instagram via the integrated AWS Manus Agentic Pipeline.",
+  "name": "Zeno Infinity",
+  "description": "Zeno Infinity: The AIM — AI for misfits. Ethical Intelligence applied to man and the unification of the Human AI family. Orchestrate custom designs, modern apparel, sovereign digital assets, and agentic multi-channel pipelines.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

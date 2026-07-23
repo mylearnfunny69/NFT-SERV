@@ -128,7 +128,7 @@ export default function ManusStudio() {
     setDesignCategory(preset.category);
   };
 
-  // Run AWS Manus Orchestration Pipeline
+  // Run AWS Zeno Orchestration Pipeline
   const handleFirePipeline = async () => {
     if (!designName.trim() || !designPrompt.trim()) {
       alert("Please provide a design name and detailed style prompt.");
@@ -157,7 +157,7 @@ export default function ManusStudio() {
     
     // Stage 2: Step Functions
     setPipelineState("step_functions");
-    log(`Step 2: Triggering AWS Step Functions Orchestration (ARN: arn:aws:states:us-east-1:777:stateMachine:ManusOrchestrator)...`);
+    log(`Step 2: Triggering AWS Step Functions Orchestration (ARN: arn:aws:states:us-east-1:777:stateMachine:ZenoOrchestrator)...`);
     await new Promise(resolve => setTimeout(resolve, 1500));
     log(`[STATE-MACHINE] Starting state tree execution. State Node: 'TriageCategory'...`);
     log(`[STATE-MACHINE] Category matched: '${designCategory}'. Branching state to Bedrock + Lambda agents.`);
@@ -204,7 +204,7 @@ export default function ManusStudio() {
       // Stage 5: Complete
       setPipelineState("complete");
       setPipelineResult(data);
-      log(`[DYNAMODB] Recording log entry in Table 'ManusLogs' for Execution ID: ${execId}`);
+      log(`[DYNAMODB] Recording log entry in Table 'ZenoLogs' for Execution ID: ${execId}`);
       log(`[TELEMETRY] Pipeline complete in 8.7 seconds. Status: 100% OPERATIONAL & LOGGED.`);
       
     } catch (err) {
@@ -353,18 +353,18 @@ export default function ManusStudio() {
   };
 
   return (
-    <div className="space-y-8 animate-fadeIn" id="manus-studio-hub">
+    <div className="space-y-8 animate-fadeIn" id="zeno-studio-hub">
       
       {/* Tab Header Banner */}
       <div className="p-6 bg-black border border-white/10 relative overflow-hidden">
         {/* Abstract design line */}
         <div className="absolute top-0 right-0 p-8 text-white/5 font-black text-7xl select-none uppercase font-mono pointer-events-none">
-          MANUS
+          ZENO
         </div>
         <div className="relative z-10 space-y-2">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-[#7C3AED]/15 text-[#7C3AED] border border-[#7C3AED]/30 font-mono text-[9px] font-black tracking-widest uppercase">
-              AWS MANUS PIPELINE v2
+              AWS ZENO PIPELINE v2
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#F472B6] animate-pulse"></span>
             <span className="text-[9px] font-mono text-[#F472B6] font-bold uppercase tracking-widest">
@@ -372,11 +372,10 @@ export default function ManusStudio() {
             </span>
           </div>
           <h2 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-            <Cpu className="text-[#7C3AED]" /> Z/OS Manus Studio
+            <Cpu className="text-[#7C3AED]" /> Zeno Infinity Studio
           </h2>
           <p className="text-white/60 text-xs max-w-3xl leading-relaxed">
-            Orchestrate your futuristic PC custom builds, modern graffiti apparel, and product lines. 
-            Formulate copywriting and distribution payloads automatically. Fire the pipeline to deploy to Amazon, Facebook, and Instagram!
+            Orchestrate custom PC builds, modern apparel, and sovereign digital assets. Formulate copywriting and distribution payloads automatically. Fire the pipeline to deploy to Amazon, Facebook, and Instagram!
           </p>
         </div>
       </div>
@@ -397,7 +396,7 @@ export default function ManusStudio() {
             activeTab === "pipeline" ? "bg-[#7C3AED] text-white" : "text-white/60 hover:text-white hover:bg-white/5"
           }`}
         >
-          ⚙️ 2. Manus Pipeline
+          ⚙️ 2. Zeno Pipeline
         </button>
         <button
           onClick={() => setActiveTab("integration")}
@@ -503,7 +502,7 @@ export default function ManusStudio() {
                   className="w-full py-4 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-black uppercase tracking-[0.2em] text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-[#7C3AED]/40 shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_20px_rgba(124,58,237,0.5)]"
                 >
                   <Send size={13} className="animate-pulse" />
-                  Initiate AWS Manus Pipeline
+                  Initiate AWS Zeno Pipeline
                 </button>
               </div>
 
@@ -729,7 +728,7 @@ export default function ManusStudio() {
               </div>
               <div className="bg-black border border-white/5 p-4 rounded-none h-64 overflow-y-auto space-y-1.5 text-white/80 scrollbar-none">
                 {executionLogs.length === 0 ? (
-                  <p className="text-white/30 italic">No execution trace loaded. Initiate Manus Pipeline in the Design Lab to witness the AWS Step Function logs.</p>
+                  <p className="text-white/30 italic">No execution trace loaded. Initiate Zeno Pipeline in the Design Lab to witness the AWS Step Function logs.</p>
                 ) : (
                   executionLogs.map((logStr, idx) => (
                     <div key={idx} className={logStr.includes("SUCCESS") || logStr.includes("complete") ? "text-emerald-400" : logStr.includes("ERROR") ? "text-rose-400 font-bold" : "text-white/70"}>
@@ -744,7 +743,7 @@ export default function ManusStudio() {
             <div className="lg:col-span-2 border border-white/10 bg-[#0c0c0c] p-5 space-y-4">
               <div className="border-b border-white/5 pb-2">
                 <h3 className="text-xs font-black uppercase tracking-widest text-white">
-                  Manus Execution Output Payloads
+                  Zeno Execution Output Payloads
                 </h3>
                 <p className="text-[9px] text-white/40 font-mono mt-0.5">
                   Generated copywriting and retail configuration metadata synced directly from S3
@@ -866,7 +865,7 @@ export default function ManusStudio() {
                 </div>
               ) : (
                 <div className="p-8 bg-black border border-white/5 text-center text-white/30 italic">
-                  Pipeline results pending. Back to the "Design Lab" tab and initiate a Manus run to see generated distribution materials.
+                  Pipeline results pending. Back to the "Design Lab" tab and initiate a Zeno run to see generated distribution materials.
                 </div>
               )}
 
